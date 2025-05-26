@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ config.title }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, 'Microsoft YaHei', '微软雅黑', sans-serif;
+            margin: 0;
+            background-color: #eef1f5;
+            color: #333;
+            display: flex;
+            flex-direction: column; 
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .perspective-switcher {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .perspective_a-mode .perspective-switcher { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .perspective_b-mode .perspective-switcher { background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%); }
+
+        .chat-container {
+            background-color: #fff;
+            width: 100%;
+            max-width: 700px;
+            height: 80vh; 
+            max-height: 750px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        header {
+            color: white;
+            padding: 18px;
+            text-align: center;
+            font-size: 1.4em; 
+            border-radius: 15px 15px 0 0;
+        }
+        .perspective_a-mode header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .perspective_b-mode header { background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%); }
+
+        .chat-box {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .message {
+            padding: 10px 15px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+            max-width: 75%;
+            line-height: 1.4;
+            opacity: 0;
+            transform: translateY(10px);
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+
+        .other-person-message-block {
+            align-self: flex-start;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        .other-person-message {
+            background-color: #f1f1f1; 
+            color: #333;
+            display: inline-block;
+            max-width: 75%;
+            padding: 10px 15px;
+            border-radius: 20px;
+            border-bottom-left-radius: 5px;
+            animation: fadeIn 0.3s ease-out forwards;
+            opacity: 0; transform: translateY(10px);
+        }
+        .ai-interpretation-text {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+            margin-left: 5px;
+            padding: 5px 10px;
+            max-width: 75%;
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            border: 1px solid #eee;
+            display: inline-block;
+            animation: fadeIn 0.3s ease-out 0.1s forwards;
+            opacity: 0; transform: translateY(10px);
+        }
+
+        .ai-suggestions-container {
+            align-self: flex-end;
+            width: 100%;
+            margin-bottom: 15px;
+            animation: fadeIn 0.3s ease-out forwards;
+            opacity:0; transform: translateY(10px);
+        }
+        .ai-suggestion-bubble {
+            background-color: #e0e0e0;
+            color: #333;
+            padding: 10px 15px;
+            border-radius: 15px;
+            margin: 5px 0 5px 25%;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            border: 1px solid #ccc;
+            text-align: left;
+            width: 75%;
+            box-sizing: border-box;
+            display: block;
+        }
+        .ai-suggestion-bubble:hover {
+            background-color: #c9c9c9;
+        }
+        .user-reply-message {
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+            padding: 10px 15px;
+            border-radius: 20px;
+            animation: fadeIn 0.3s ease-out forwards;
+            opacity:0; transform: translateY(10px);
+        }
+
+        .perspective_a-mode .other-person-message { background-color: #f1f1f1; } 
+        .perspective_a-mode .user-reply-message { background-color: #2a9d8f; } 
+        .perspective_b-mode .other-person-message { background-color: #fde2e4; } 
+        .perspective_b-mode .user-reply-message { background-color: #007bff; } 
+        
+        .input-area-container {
+            padding: 10px 15px;
+            border-top: 1px solid #eee;
+            background-color: #f9f9f9;
+        }
+        .input-area {
+            display: flex;
+            margin-bottom: 5px;
+        }
+        .input-area input[type="text"] {
+            flex-grow: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            margin-right: 10px;
+            font-size: 1em;
+        }
+        .input-area button {
+            padding: 12px 20px;
+            border: none;
+            color: white;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+            position: relative;
+        }
+        .perspective_a-mode .input-area button { background-color: #2a9d8f; }
+        .perspective_a-mode .input-area button:hover { background-color: #264653; }
+        .perspective_b-mode .input-area button { background-color: #007bff; }
+        .perspective_b-mode .input-area button:hover { background-color: #0056b3; }
+
+        .input-area button.loading::after {
+            content: ""; position: absolute; width: 16px; height: 16px;
+            top: 50%; left: 50%; margin-top: -8px; margin-left: -8px;
+            border: 2px solid rgba(255, 255, 255, 0.5); border-top-color: white;
+            border-radius: 50%; animation: spin 0.6s linear infinite;
+        }
+        .input-area button.loading span { visibility: hidden; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .action-buttons {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 8px;
+        }
+        .clear-chat-button {
+            padding: 6px 12px;
+            font-size: 0.85em;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+        }
+        .footer-note {
+            text-align: center;
+            padding: 10px;
+            font-size: 0.8em;
+            color: #888;
+            background-color: #f9f9f9;
+            border-radius: 0 0 15px 15px;
+        }
+        .custom-reply-form { margin-top:10px; }
+        .custom-reply-form textarea { width: calc(100% - 24px); padding: 10px; border-radius: 15px; border: 1px solid #ccc; font-size: 0.95em; min-height: 40px; box-sizing: border-box; margin-bottom:5px; }
+        .custom-reply-form button { font-size: 0.9em; padding: 8px 15px; }
+    </style>
+</head>
+<body class="{{ perspective }}-mode">
+    <div class="action-buttons" style="width:100%; max-width: 700px; padding-bottom: 5px;">
+        <button class="perspective-switcher" onclick="switchPerspective()">
+            切换到：{{ PERSPECTIVES[perspective == 'perspective_a' and 'perspective_b' or 'perspective_a'].header }}
+        </button>
+        <form action="{{ url_for('clear_chat') }}" method="post" style="display: inline;">
+            <button type="submit" class="clear-chat-button">清空对话</button>
+        </form>
+    </div>
+
+    <div class="chat-container">
+        <header>{{ config.header }}</header>
+        <div class="chat-box" id="chatBox">
+            {% if not chat_history %}
+                 <p style="text-align:center; color: #aaa; margin-top: 20px;">开始对话吧！</p>
+            {% endif %}
+            {% for message in chat_history %}
+                {% if message.role == 'other_person_says' %}
+                    <div class="other-person-message-block">
+                        <div class="message other-person-message">
+                            <strong>{{ config.message_labels.other_person }}</strong> {{ message.content }}
+                        </div>
+                        {% if message.interpretation %}
+                            <div class="ai-interpretation-text">
+                                <strong>{{ config.message_labels.ai_interpretation }}</strong> {{ message.interpretation }}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% elif message.role == 'ai_suggestions' %}
+                    <div class="message ai-suggestions-container">
+                        <strong>{{ config.message_labels.ai_suggestions }}</strong>
+                        {% for suggestion in message.suggestions %}
+                            <form action="{{ url_for('submit_user_reply') }}" method="post" style="margin:5px 0;">
+                                <input type="hidden" name="chosen_ai_suggestion" value="{{ suggestion }}">
+                                <button type="submit" class="ai-suggestion-bubble" style="width: calc(100% - 120px); display: inline-block; vertical-align: middle;">{{ suggestion }}</button>
+                                <div style="display: inline-block; vertical-align: middle; margin-left: 5px;">
+                                    <input type="range" name="score" min="0" max="100" value="75" class="score-slider-ai-{{ loop.index }}" oninput="this.nextElementSibling.textContent = this.value">
+                                    <span class="score-display" style="font-size:0.8em;">75</span>
+                                </div>
+                            </form>
+                        {% endfor %}
+                    </div>
+                {% elif message.role == 'user_reply' %}
+                    <div class="message user-reply-message">
+                        <strong>{{ config.message_labels.user_reply }}</strong><br><pre>{{ message.content }}</pre>
+                        {# 如果这条回复有系统评分，则显示 #}
+                        {% if message.score is not none %}
+                        <div class="system-score-badge">系统评估分: {{ message.score }}/100</div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        <div class="input-area-container">
+            {% if not waiting_for_selection %}
+            <form action="{{ url_for('generate_suggestions') }}" method="post" class="input-area" id="chatForm">
+                <input type="text" name="user_input" placeholder="{{ config.input_placeholder }}" required>
+                <button type="submit" id="submitButton"><span>{{ config.button_text }}</span></button>
+            </form>
+            {% else %}
+            <div style="padding: 10px 0;">
+                <p style="text-align:center; margin-bottom:10px; color: #555;">请选择AI建议，或输入你的自定义回复：</p>
+                {# 自定义回复表单，不再需要用户输入分数的组件 #}
+                <form action="{{ url_for('submit_user_reply') }}" method="post" class="custom-reply-form input-area" id="customReplyForm">
+                    <textarea name="custom_reply_text" placeholder="{{ config.custom_reply_placeholder }}" rows="2"></textarea>
+                    <button type="submit" id="submitCustomReplyButton"><span>发送我的回复</span></button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+        <div class="footer-note">AI建议仅供参考，真诚沟通最重要哦！</div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chatBox');
+        if(chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+
+        const chatForm = document.getElementById('chatForm');
+        const submitButton = document.getElementById('submitButton');
+        const customReplyForm = document.getElementById('customReplyForm');
+        const submitCustomReplyButton = document.getElementById('submitCustomReplyButton');
+
+        if (chatForm && submitButton) {
+            chatForm.addEventListener('submit', function(event) {
+                const userInputField = document.querySelector('input[name="user_input"]');
+                if (userInputField && userInputField.value.trim() === '') {
+                    event.preventDefault(); 
+                    return;
+                }
+                submitButton.disabled = true;
+                submitButton.classList.add('loading');
+            });
+        }
+        
+        if (customReplyForm && submitCustomReplyButton) {
+             customReplyForm.addEventListener('submit', function(event) {
+                const customReplyField = customReplyForm.querySelector('textarea[name="custom_reply_text"]');
+                if (customReplyField && customReplyField.value.trim() === '') {
+                    // If custom reply is empty, we assume user might have clicked an AI suggestion instead,
+                    // or we might want to prevent empty custom submission. For now, let it go, 
+                    // backend will prioritize custom if not empty.
+                    // To strictly prevent empty custom submission:
+                    // event.preventDefault(); 
+                    // alert("自定义回复不能为空。");
+                    // return;
+                }
+                submitCustomReplyButton.disabled = true;
+                submitCustomReplyButton.classList.add('loading');
+            });
+        }
+
+        window.addEventListener('pageshow', function(event) {
+            if (submitButton && submitButton.classList.contains('loading')) {
+                submitButton.disabled = false;
+                submitButton.classList.remove('loading');
+            }
+            if (submitCustomReplyButton && submitCustomReplyButton.classList.contains('loading')) {
+                submitCustomReplyButton.disabled = false;
+                submitCustomReplyButton.classList.remove('loading');
+            }
+        });
+
+        function switchPerspective() {
+            const currentPerspective = "{{ perspective }}";
+            const newPerspective = currentPerspective === 'perspective_a' ? 'perspective_b' : 'perspective_a';
+            window.location.href = "{{ url_for('switch_perspective', new_perspective='__PERSPECTIVE__') }}".replace('__PERSPECTIVE__', newPerspective);
+        }
+    </script>
+</body>
+</html>
+<style>
+        .score-input-container {
+            display: flex;
+            align-items: center;
+            margin-top: 8px; /* 与自定义回复文本框的间距 */
+            margin-bottom: 8px; /* 与发送按钮的间距 */
+        }
+        .score-input-container label {
+            margin-right: 10px;
+            font-size: 0.9em;
+            color: #555;
+        }
+        .score-input-container input[type="range"] {
+            flex-grow: 1;
+            height: 8px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #ddd;
+            outline: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .score-input-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #007bff; /* 滑块颜色，可以根据视角调整 */
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .score-input-container input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #007bff;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+        .score-display {
+            margin-left: 10px;
+            font-size: 0.9em;
+            color: #333;
+            min-width: 30px; /* 保持宽度稳定 */
+            text-align: right;
+        }
+
+        .user-reply-message .score-badge {
+            display: inline-block;
+            background-color: #ffc107; /* 醒目的黄色 */
+            color: #333;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+</style>
+</body>
+</html>
