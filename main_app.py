@@ -42,21 +42,41 @@ def evaluate_reply_score(reply_text):
     """调用AI接口对自定义回复进行打分，返回0-100分整数"""
     api_url = f"{DEEPSEEK_API_BASE_URL}/chat/completions"
     headers = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type": "application/json"}
-    # 设计一个专门用于评分的提示
-    prompt_for_scoring = f"请你扮演一位专业的沟通分析师。仔细阅读以下用户回复，并根据其情感表达的恰当性、真诚度、以及在假设的对话情境中可能达成的沟通效果，给出一个综合评分。分数范围为0到100分。请只输出一个整数数字作为评分结果，不要包含任何其他文字、解释或单位。例如，如果评分是85，就只输出 '85'。\n\n用户回复内容如下：\n\'{reply_text}\'"
+    
+    # 优化后的评分提示，包含更具体的指示和示例
+    prompt_for_scoring = f"""
+请你扮演一位专业的沟通分析师。仔细阅读以下用户回复，并根据其情感表达的恰当性、真诚度、以及在假设的对话情境中可能达成的沟通效果，给出一个综合评分。分数范围为0到100分。
+
+评分标准参考：
+- 90-100分：表达完美，情感真挚饱满，极富同理心，能有效促进积极对话。
+- 70-89分：表达良好，情感较为真诚，沟通有效，但有提升空间。
+- 50-69分：表达基本合格，情感传递一般，沟通效果尚可。
+- 30-49分：表达存在一些问题，情感传递不足或不当，可能引起误解。
+- 0-29分：表达很差，缺乏情感或表达负面，沟通效果差。
+
+请只输出一个整数数字作为评分结果，不要包含任何其他文字、解释或单位。例如，如果评分是85，就只输出 '85'。
+
+以下是一些评分示例：
+用户回复："你今天看起来心情很好，有什么开心的事分享吗？" 理想评分：92
+用户回复："知道了。" 理想评分：45
+用户回复："随便。" 理想评分：20
+
+现在，请对以下用户回复进行评分：
+\'{reply_text}\'
+"""
     
     payload = {
-        "model": "deepseek-chat", # 或者其他你选用的模型
+        "model": "deepseek-chat", 
         "messages": [
-            {"role": "system", "content": "你是一个只输出0-100整数评分的助手。"}, # 强化系统角色，确保只输出数字
+            {"role": "system", "content": "你是一个只输出0-100整数评分的助手。严格按照用户提供的评分标准和示例进行评分。"}, 
             {"role": "user", "content": prompt_for_scoring}
         ],
-        "max_tokens": 10,       # 限制token数量，因为我们只需要一个数字
-        "temperature": 0.1      # 较低的temperature使输出更稳定和确定
+        "max_tokens": 10,       
+        "temperature": 0.0  # 尝试设置为0，以获得更确定的输出
     }
     
     try:
-        response = requests.post(api_url, headers=headers, json=payload, timeout=10) # 设置超时
+        response = requests.post(api_url, headers=headers, json=payload, timeout=15) # 略微增加超时
         response.raise_for_status() # 如果HTTP请求返回了错误状态码，则抛出异常
         data = response.json()
         
